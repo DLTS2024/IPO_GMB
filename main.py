@@ -112,18 +112,17 @@ def update_excel(ipos):
             print(f"-- Skipping IPO {name} due to missing end date")
             continue
 
-        if end > today and (end - today).days <= 60 and working_days_between(today, end) >= 3 and gmp > 12:
+        if end > today and (end - today).days <= 60 and working_days_between(today, end) >= 1:
             print(f"-- Future IPO detected: {name}, GMP={gmp}")
             existing = df[df["IPO Name"] == name]
             if not existing.empty:
-                print(f"-- Updating existing IPO {name}")
-                df.loc[df["IPO Name"] == name, "GMP"] = str(existing["GMP"].values[0]) + f",{gmp}"
+                print("")              
             else:
                 print(f"-- Adding new IPO {name}")
                 df = pd.concat([df, pd.DataFrame([[name, gmp, start, end, sub, ""]],
                                                  columns=df.columns)], ignore_index=True)
 
-        elif end == today and (end - today).days <= 60:
+        if end == today and (end - today).days <= 60:
             print(f"-- IPO closing today: {name}, GMP={gmp}")
             existing = df[df["IPO Name"] == name]
             if not existing.empty:
@@ -146,7 +145,7 @@ def update_excel(ipos):
                         f"Name: {row['IPO Name']}\n"
                         f"GMP History: {row['GMP']}\n"
                         f"Subscription: {row['Subscription']}\n"
-                        f"Start: {row['Start Date']}, "
+                        f"Start: {row['Start Date']}\n, "
                         f"End: {row['End Date']}\n"
                         f"Status: Proceed"
                     )
