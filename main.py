@@ -101,7 +101,7 @@ def process_ipos(ipos):
             continue
 
         # 🔹 Only consider IPOs within next 60 days
-        if end < today or (end - today).days > 60:
+        if end <= today or (end - today).days > 60:
             print(f"-- IPO {name} outside 60-day window, skipping")
             continue
 
