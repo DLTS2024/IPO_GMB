@@ -111,7 +111,7 @@ def process_ipos(ipos):
 
             # 🔹 RULE: GMP > 30 → PROCEED
             try:
-                if float(gmp) > 30:
+                if float(gmp) > 10:
                     print(f"-- GMP PASSED for {name}, GMP={gmp}")
 
                     day_text = "Closing Today" if today == end else "Closing Tomorrow"
