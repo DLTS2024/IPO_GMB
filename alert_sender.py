@@ -50,7 +50,7 @@ def send_telegram_message(message):
         return False
 
 
-def get_working_days_before(end_date, num_days=3):
+def get_working_days_before(end_date, num_days=2):
     """Get the last N working days before end_date (excluding weekends)"""
     working_days = []
     current = end_date - timedelta(days=1)
@@ -104,15 +104,15 @@ def check_and_send_alerts():
 
 
 def process_and_alert(supabase, ipo, today, is_closing_today):
-    """Process a single IPO and send alert if avg GMP > 30%"""
+    """Process a single IPO and send alert if avg GMP > 5%"""
     ipo_id = ipo['id']
     ipo_name = ipo['name']
     end_date = datetime.strptime(ipo['end_date'], '%Y-%m-%d').date()
     
     logger.info(f"Processing IPO: {ipo_name} (ends {end_date})")
     
-    # Get last 3 working days of GMP data
-    working_days = get_working_days_before(end_date, 3)
+    # Get last 2 working days of GMP data
+    working_days = get_working_days_before(end_date, 2)
     working_days_str = [str(d) for d in working_days]
     
     gmp_result = supabase.table('gmp_history').select('gmp, recorded_at').eq('ipo_id', ipo_id).in_('recorded_at', working_days_str).execute()
@@ -130,7 +130,7 @@ def process_and_alert(supabase, ipo, today, is_closing_today):
     logger.info(f"IPO: {ipo_name}, GMP values: {gmps}, Average: {avg_gmp:.2f}%")
     
     # Check threshold
-    if avg_gmp > 30:
+    if avg_gmp > 5:
         gmp_history_text = "\n".join([f"  • {r['recorded_at']}: {r['gmp']}%" for r in gmp_result.data])
         
         if is_closing_today:
