@@ -130,7 +130,7 @@ def process_and_alert(supabase, ipo, today, is_closing_today):
     logger.info(f"IPO: {ipo_name}, GMP values: {gmps}, Average: {avg_gmp:.2f}%")
     
     # Check threshold
-    if avg_gmp > 5:
+    if avg_gmp >= 0:
         gmp_history_text = "\n".join([f"  • {r['recorded_at']}: {r['gmp']}%" for r in gmp_result.data])
         
         if is_closing_today:
