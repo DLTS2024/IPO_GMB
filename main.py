@@ -154,7 +154,7 @@ def update_excel(ipos):
     for idx, row in df.iterrows():
         end_date = pd.to_datetime(row["End Date"]).date()
 
-        if today == end_date or today == end_date - timedelta(days=1):
+        if today == end_date or today == end_date:
             gmp_values = [float(x) for x in str(row["GMP"]).split(",") if x]
 
             if gmp_values:
