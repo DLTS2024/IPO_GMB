@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS ipos (
     start_date DATE,
     end_date DATE NOT NULL,
     subscription TEXT,
-    status TEXT DEFAULT 'tracking' CHECK (status IN ('tracking', 'alerted', 'expired')),
+    status TEXT DEFAULT 'tracking' CHECK (status IN ('tracking', 'alerted_tomorrow', 'alerted_today', 'expired')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(name, end_date)
 );
