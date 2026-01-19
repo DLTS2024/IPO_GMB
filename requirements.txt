@@ -1,4 +1,4 @@
-selenium>=4.6
-requests
-pandas
-openpyxl
+python-telegram-bot>=20.0
+selenium>=4.0.0
+requests>=2.28.0
+supabase>=2.0.0
