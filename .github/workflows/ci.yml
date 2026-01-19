@@ -2,7 +2,7 @@ name: Daily Selenium Run
 
 on:
   schedule:
-    - cron: "30 14 * * *"
+    - cron: "00 15 * * *"
 
 jobs:
   run-python:
