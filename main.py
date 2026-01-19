@@ -1,28 +1,12 @@
 import os
 import re
-import pandas as pd
+import requests
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from openpyxl import load_workbook
-from openpyxl.styles import Font, Alignment
-from openpyxl.utils import get_column_letter
 from selenium.webdriver.chrome.options import Options
-import requests
-
-# Helper: calculate working days between two dates
-def working_days_between(start, end):
-    print("-- Calculating working days between", start, "and", end)
-    days = 0
-    current = start
-    while current <= end:
-        if current.weekday() < 5:  # 0=Mon, 6=Sun
-            days += 1
-        current += timedelta(days=1)
-    print(f"-- Total working days: {days}")
-    return days
 
 # ---------------- FETCH IPO DATA ----------------
 
@@ -62,6 +46,7 @@ def get_ipos():
 
             print(f"-- Processing IPO: {name}")
 
+            # Extract GMP percentage
             match = re.search(r"\(([\d\.]+)%\)", gmp_text)
             gmp_value = float(match.group(1)) if match else 0
 
@@ -89,7 +74,6 @@ def get_ipos():
 # ---------------- TELEGRAM ----------------
 
 def send_telegram_message(message):
-    print("-- Preparing to send Telegram message")
     TELEGRAM_TOKEN = os.getenv("TG_BOT_TOKEN")
     TELEGRAM_CHAT_ID = os.getenv("TG_CHAT_ID")
 
@@ -102,19 +86,13 @@ def send_telegram_message(message):
     except Exception as e:
         print("-- Telegram send failed:", e)
 
-# ---------------- EXCEL UPDATE (ORIGINAL LOGIC) ----------------
+# ---------------- MAIN VALIDATION LOGIC ----------------
 
-def update_excel(ipos):
-    print("-- Starting Excel update process")
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    excel_file = os.path.join(script_dir, "TestData", "IPO_GMP.xlsx")
-    print(f"-- Excel file path: {excel_file}")
+def process_ipos(ipos):
+    print("-- Starting IPO validation logic")
 
     today = datetime.today().date()
-    print("-- Reading Excel file into DataFrame")
-    df = pd.read_excel(excel_file)
-
-    print("-- Updating IPO entries in DataFrame")
+    print(f"-- Today date: {today}")
 
     for name, gmp, start, end, sub in ipos:
 
@@ -122,98 +100,46 @@ def update_excel(ipos):
             print(f"-- Skipping IPO {name} due to missing end date")
             continue
 
-        # Future IPOs
-        if end > today and (end - today).days <= 60 and working_days_between(today, end) >= 0:
-            print(f"-- Future IPO detected: {name}, GMP={gmp}")
-            existing = df[df["IPO Name"] == name]
+        # 🔹 Only consider IPOs within next 60 days
+        if end < today or (end - today).days > 60:
+            print(f"-- IPO {name} outside 60-day window, skipping")
+            continue
 
-            if not existing.empty:
-                print(f"-- Appending GMP for IPO {name}")
-                df.loc[df["IPO Name"] == name, "GMP"] = str(existing["GMP"].values[0]) + f",{gmp}"
-            else:
-                print(f"-- Adding new IPO {name}")
-                df = pd.concat([df, pd.DataFrame([[name, gmp, start, end, sub, ""]],
-                                                 columns=df.columns)], ignore_index=True)
+        # 🔹 Check ONLY if today is closing day OR one day before closing
+        if today == end or today == (end - timedelta(days=1)):
+            print(f"-- IPO in alert window: {name}, End={end}, GMP={gmp}")
 
-        # IPO closing today
-        if end == today and (end - today).days <= 60:
-            print(f"-- IPO closing today: {name}, GMP={gmp}")
-            existing = df[df["IPO Name"] == name]
+            # 🔹 RULE: GMP > 30 → PROCEED
+            try:
+                if float(gmp) > 30:
+                    print(f"-- GMP PASSED for {name}, GMP={gmp}")
 
-            if not existing.empty:
-                print(f"-- Appending GMP for IPO {name}")
-                df.loc[df["IPO Name"] == name, "GMP"] = str(existing["GMP"].values[0]) + f",{gmp}"
-            else:
-                print(f"-- Adding new IPO {name}")
-                df = pd.concat([df, pd.DataFrame([[name, gmp, start, end, sub, ""]],
-                                                 columns=df.columns)], ignore_index=True)
-
-    # ---------------- STATUS EVALUATION (ORIGINAL) ----------------
-
-    print("-- Evaluating IPO statuses")
-    for idx, row in df.iterrows():
-        end_date = pd.to_datetime(row["End Date"]).date()
-
-        if today == end_date or today == end_date:
-            gmp_values = [float(x) for x in str(row["GMP"]).split(",") if x]
-
-            if gmp_values:
-                avg_gmp = sum(gmp_values) / len(gmp_values)
-                print(f"-- IPO {row['IPO Name']} average GMP={avg_gmp}")
-
-                if avg_gmp > 10:
-                    df.at[idx, "Status"] = "Proceed"
-                    print(f"-- Status set to Proceed for IPO {row['IPO Name']}")
+                    day_text = "Closing Today" if today == end else "Closing Tomorrow"
 
                     message = (
-                        f"🚀 IPO Alert!\n\n"
-                        f"Name: {row['IPO Name']}\n"
-                        f"GMP History: {row['GMP']}\n"
-                        f"Subscription: {row['Subscription']}\n"
-                        f"Start: {row['Start Date']}\n"
-                        f"End: {row['End Date']}\n\n"
-                        f"Status: Proceed"
+                        f"🚀 IPO PROCEED ALERT ({day_text})\n\n"
+                        f"Name: {name}\n"
+                        f"GMP: {gmp}%\n"
+                        f"Subscription: {sub}\n"
+                        f"Start Date: {start}\n"
+                        f"End Date: {end}\n\n"
+                        f"Status: PROCEED"
                     )
 
                     send_telegram_message(message)
 
                 else:
-                    df.at[idx, "Status"] = "Skip"
-                    print(f"-- Status set to Skip for IPO {row['IPO Name']}")
+                    print(f"-- GMP below threshold for {name}, GMP={gmp}")
 
-    # ---------------- CLEANUP & SAVE ----------------
+            except Exception as e:
+                print(f"-- Error processing GMP for {name}: {e}")
 
-    print("-- Cleaning up expired IPOs")
-    df = df[pd.to_datetime(df["End Date"]).dt.date >= today]
-
-    print("-- Saving updated DataFrame back to Excel")
-    df.to_excel(excel_file, index=False)
-
-    print("-- Applying auto-formatting to Excel file")
-    wb = load_workbook(excel_file)
-    ws = wb.active
-
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-        cell.alignment = Alignment(horizontal="center")
-
-    for col in ws.columns:
-        max_length = 0
-        col_letter = get_column_letter(col[0].column)
-        for cell in col:
-            try:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            except:
-                pass
-        ws.column_dimensions[col_letter].width = max_length + 2
-
-    wb.save(excel_file)
-    print("-- Excel update process completed successfully")
+        else:
+            print(f"-- IPO {name} not in closing window (Today={today}, End={end}), skipping")
 
 # ---------------- RUN DAILY ----------------
 
 print("-- Script execution started")
 ipos = get_ipos()
-update_excel(ipos)
+process_ipos(ipos)
 print("-- Script execution finished")
