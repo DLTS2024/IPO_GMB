@@ -52,34 +52,47 @@ def send_telegram_message(message):
 
 
 def send_n8n_webhook(ipo_data, alert_type):
-    """Send IPO alert data to N8N webhook for WhatsApp"""
+    """Send IPO alert data to N8N webhook for WhatsApp - to multiple numbers"""
     if not N8N_WEBHOOK_URL:
         logger.warning("N8N_WEBHOOK_URL not set, skipping webhook")
         return False
     
-    payload = {
-        "alert_type": alert_type,  # "closing_tomorrow" or "closing_today"
-        "ipo_name": ipo_data.get("name"),
-        "price": ipo_data.get("price"),
-        "subscription": ipo_data.get("subscription"),
-        "start_date": ipo_data.get("start_date"),
-        "end_date": ipo_data.get("end_date"),
-        "avg_gmp": ipo_data.get("avg_gmp"),
-        "gmp_history": ipo_data.get("gmp_history"),
-        "recommendation": "PROCEED"
-    }
+    # Phone numbers to send alerts to
+    phone_numbers = [
+        "919884872483",
+        "917604925112",
+        "919884972483"  # Add more numbers here
+        # "917604925112",
+        # "919884972483",
+    ]
     
-    try:
-        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=10)
-        if response.status_code == 200:
-            logger.info("Webhook sent to N8N successfully")
-            return True
-        else:
-            logger.error(f"N8N webhook error: {response.status_code}")
-            return False
-    except Exception as e:
-        logger.error(f"Failed to send N8N webhook: {e}")
-        return False
+    success_count = 0
+    for phone in phone_numbers:
+        payload = {
+            "alert_type": alert_type,  # "closing_tomorrow" or "closing_today"
+            "phone": phone,  # Phone number for this message
+            "ipo_name": ipo_data.get("name"),
+            "price": ipo_data.get("price"),
+            "subscription": ipo_data.get("subscription"),
+            "start_date": ipo_data.get("start_date"),
+            "end_date": ipo_data.get("end_date"),
+            "avg_gmp": ipo_data.get("avg_gmp"),
+            "gmp_history": ipo_data.get("gmp_history"),
+            "recommendation": "PROCEED"
+        }
+        
+        try:
+            response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=15)
+            if response.status_code == 200:
+                logger.info(f"Webhook sent to N8N for phone {phone}")
+                success_count += 1
+            else:
+                logger.error(f"N8N webhook error for {phone}: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Failed to send webhook for {phone}: {e}")
+    
+    logger.info(f"Sent {success_count}/{len(phone_numbers)} webhooks successfully")
+    return success_count > 0
 
 
 def get_working_days_before(end_date, num_days=2):

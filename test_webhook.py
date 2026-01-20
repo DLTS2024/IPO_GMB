@@ -1,4 +1,12 @@
 import requests
+import time
+
+# Phone numbers list (same as in alert_sender.py)
+phone_numbers = [
+    "919884872483",
+    "917604925112",
+    "919884972483"
+]
 
 data = {
     "alert_type": "closing_tomorrow",
@@ -15,11 +23,17 @@ data = {
     "recommendation": "PROCEED"
 }
 
-url = "https://n8n-n1cx.onrender.com/webhook-test/e19013f2-871d-497f-9446-733282cfbb7c"
+url = "https://n8n-n1cx.onrender.com/webhook/e19013f2-871d-497f-9446-733282cfbb7c"
 
-try:
-    r = requests.post(url, json=data, timeout=15)
-    print(f"Status: {r.status_code}")
-    print(f"Response: {r.text}")
-except Exception as e:
-    print(f"Error: {e}")
+print(f"Sending to {len(phone_numbers)} phone numbers...")
+
+for phone in phone_numbers:
+    data["phone"] = phone
+    try:
+        r = requests.post(url, json=data, timeout=60)
+        print(f"Phone {phone}: Status {r.status_code}")
+    except Exception as e:
+        print(f"Phone {phone}: Error - {e}")
+    time.sleep(1)
+
+print("Done!")
