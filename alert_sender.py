@@ -16,7 +16,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ofcngucvrrmzvihjgjvz.supabase.
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHANNEL_ID = os.getenv("TG_CHANNEL_ID")  # e.g., "@IPO_GMB_Tracker"
-N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "https://n8n-n1cx.onrender.com/webhook-test/e19013f2-871d-497f-9446-733282cfbb7c")
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "https://n8n-n1cx.onrender.com/webhook/e19013f2-871d-497f-9446-733282cfbb7c")
 
 def get_supabase() -> Client:
     """Get Supabase client"""
