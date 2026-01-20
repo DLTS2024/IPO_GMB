@@ -16,6 +16,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ofcngucvrrmzvihjgjvz.supabase.
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHANNEL_ID = os.getenv("TG_CHANNEL_ID")  # e.g., "@IPO_GMB_Tracker"
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "https://n8n-n1cx.onrender.com/webhook-test/e19013f2-871d-497f-9446-733282cfbb7c")
 
 def get_supabase() -> Client:
     """Get Supabase client"""
@@ -47,6 +48,37 @@ def send_telegram_message(message):
             return False
     except Exception as e:
         logger.error(f"Failed to send Telegram message: {e}")
+        return False
+
+
+def send_n8n_webhook(ipo_data, alert_type):
+    """Send IPO alert data to N8N webhook for WhatsApp"""
+    if not N8N_WEBHOOK_URL:
+        logger.warning("N8N_WEBHOOK_URL not set, skipping webhook")
+        return False
+    
+    payload = {
+        "alert_type": alert_type,  # "closing_tomorrow" or "closing_today"
+        "ipo_name": ipo_data.get("name"),
+        "price": ipo_data.get("price"),
+        "subscription": ipo_data.get("subscription"),
+        "start_date": ipo_data.get("start_date"),
+        "end_date": ipo_data.get("end_date"),
+        "avg_gmp": ipo_data.get("avg_gmp"),
+        "gmp_history": ipo_data.get("gmp_history"),
+        "recommendation": "PROCEED"
+    }
+    
+    try:
+        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=10)
+        if response.status_code == 200:
+            logger.info("Webhook sent to N8N successfully")
+            return True
+        else:
+            logger.error(f"N8N webhook error: {response.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to send N8N webhook: {e}")
         return False
 
 
@@ -170,9 +202,26 @@ def process_and_alert(supabase, ipo, today, is_closing_today):
             )
             new_status = 'alerted_tomorrow'
         
+        # Send to Telegram
         if send_telegram_message(message):
-            supabase.table('ipos').update({'status': new_status}).eq('id', ipo_id).execute()
-            logger.info(f"Alert sent for {ipo_name} (status: {new_status})")
+            logger.info(f"Telegram alert sent for {ipo_name}")
+        
+        # Send to N8N webhook (for WhatsApp)
+        ipo_data = {
+            "name": ipo_name,
+            "price": ipo['price'],
+            "subscription": ipo['subscription'],
+            "start_date": ipo['start_date'],
+            "end_date": ipo['end_date'],
+            "avg_gmp": round(avg_gmp, 2),
+            "gmp_history": [{"date": r['recorded_at'], "gmp": r['gmp']} for r in gmp_result.data]
+        }
+        alert_type = "closing_today" if is_closing_today else "closing_tomorrow"
+        send_n8n_webhook(ipo_data, alert_type)
+        
+        # Update status
+        supabase.table('ipos').update({'status': new_status}).eq('id', ipo_id).execute()
+        logger.info(f"Alert sent for {ipo_name} (status: {new_status})")
         
     else:
         logger.info(f"Skipping {ipo_name} - average GMP {avg_gmp:.2f}% is below threshold")

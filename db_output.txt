@@ -1,0 +1,43 @@
+﻿
+============================================================
+python : Traceback (most 
+recent call last):
+At line:1 char:231
++ ... f7vzJMCJKBEWnA3-IM_5-qu
+E4yfDQvTj_w8"; python 
+check_db.py 2>&1 | Out-F ...
++                            
+               
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Traceba  
+  ck (most recent call las   
+ t)::String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  File "C:\xampp\htdocs\IPO\T
+riggerInfo\check_db.py", 
+line 25, in <module>
+    print(f"\U0001f4ca 
+SUPABASE DATABASE - ALL IPOs 
+({len(ipos.data)} total)")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\swagd\AppDat
+a\Local\Programs\Python\Pytho
+n313\Lib\encodings\cp1252.py"
+, line 19, in encode
+    return codecs.charmap_enc
+ode(input,self.errors,encodin
+g_table)[0]
+           ~~~~~~~~~~~~~~~~~~
+~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^
+UnicodeEncodeError: 
+'charmap' codec can't encode 
+character '\U0001f4ca' in 
+position 0: character maps 
+to <undefined>
