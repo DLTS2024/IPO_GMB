@@ -2,8 +2,8 @@ name: GMP Collector (Evening)
 
 on:
   schedule:
-    # Run at 6:00 PM IST (12:30 PM UTC) - Evening collection ONLY
-    - cron: '30 12 * * *'
+    # Run at 4:00 PM IST (10:30 AM UTC) - Evening collection ONLY
+    - cron: '30 10 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
