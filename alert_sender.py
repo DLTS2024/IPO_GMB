@@ -149,18 +149,16 @@ def check_and_send_alerts():
 
 
 def process_and_alert(supabase, ipo, today, is_closing_today):
-    """Process a single IPO and send alert if avg GMP > 5%"""
+    """Process a single IPO and send alert if avg GMP >= 0%"""
     ipo_id = ipo['id']
     ipo_name = ipo['name']
     end_date = datetime.strptime(ipo['end_date'], '%Y-%m-%d').date()
     
     logger.info(f"Processing IPO: {ipo_name} (ends {end_date})")
     
-    # Get last 2 working days of GMP data
-    working_days = get_working_days_before(end_date, 2)
-    working_days_str = [str(d) for d in working_days]
-    
-    gmp_result = supabase.table('gmp_history').select('gmp, recorded_at').eq('ipo_id', ipo_id).in_('recorded_at', working_days_str).execute()
+    # Get last 4 GMP records (2 days x 2 collections per day)
+    # Order by recorded_at descending to get most recent first
+    gmp_result = supabase.table('gmp_history').select('gmp, recorded_at').eq('ipo_id', ipo_id).order('recorded_at', desc=True).limit(4).execute()
     
     if not gmp_result.data:
         logger.warning(f"No GMP history found for {ipo_name}")
@@ -168,11 +166,16 @@ def process_and_alert(supabase, ipo, today, is_closing_today):
             supabase.table('ipos').update({'status': 'expired'}).eq('id', ipo_id).execute()
         return
     
-    # Calculate average GMP
+    # Require minimum 2 GMP records to calculate average
+    if len(gmp_result.data) < 2:
+        logger.warning(f"Insufficient GMP data for {ipo_name} (need 2, have {len(gmp_result.data)})")
+        return
+    
+    # Calculate average GMP from available records
     gmps = [record['gmp'] for record in gmp_result.data]
     avg_gmp = sum(gmps) / len(gmps)
     
-    logger.info(f"IPO: {ipo_name}, GMP values: {gmps}, Average: {avg_gmp:.2f}%")
+    logger.info(f"IPO: {ipo_name}, GMP values: {gmps}, Average: {avg_gmp:.2f}% (from {len(gmps)} records)")
     
     # Check threshold
     if avg_gmp >= 0:

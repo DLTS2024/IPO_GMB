@@ -2,7 +2,7 @@ name: Daily IPO Tracker
 
 on:
   schedule:
-    # Run at 9:00 AM IST (3:30 AM UTC)
+    # Run at 9:00 AM IST (3:30 AM UTC) - Morning alert
     - cron: '30 3 * * *'
   workflow_dispatch:  # Allow manual trigger
 
@@ -38,7 +38,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python ipo_tracker.py
 
-      - name: Run GMP Collector (Daily GMP)
+      - name: Run GMP Collector (Collect GMP)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

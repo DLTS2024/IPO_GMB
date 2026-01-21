@@ -1,0 +1,39 @@
+name: GMP Collector (Evening)
+
+on:
+  schedule:
+    # Run at 6:00 PM IST (12:30 PM UTC) - Evening collection ONLY
+    - cron: '30 12 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  collect-gmp:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run GMP Collector (Evening collection)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python gmp_collector.py
