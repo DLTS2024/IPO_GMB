@@ -4,8 +4,12 @@ Send greeting message to Telegram channel
 import os
 import requests
 
-TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "8435170974:AAHzAhVgmjCE_16T_KnevEw5bc03YYPRjS4")
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHANNEL_ID = os.getenv("TG_CHANNEL_ID", "@IPO_GMB_Tracker")
+
+if not TG_BOT_TOKEN:
+    print("❌ Error: TG_BOT_TOKEN environment variable not set!")
+    exit(1)
 
 message = """
 🎉 *Welcome to IPO GMB Tracker!*
