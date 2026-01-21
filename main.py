@@ -100,18 +100,12 @@ def process_ipos(ipos):
             print(f"-- Skipping IPO {name} due to missing end date")
             continue
 
-        # 🔹 Only consider IPOs within next 60 days
-        if end <= today or (end - today).days > 60:
-            print(f"-- IPO {name} outside 60-day window, skipping")
-            continue
-
         # 🔹 Check ONLY if today is closing day OR one day before closing
         if today == end or today == (end - timedelta(days=1)):
             print(f"-- IPO in alert window: {name}, End={end}, GMP={gmp}")
 
-            # 🔹 RULE: GMP > 30 → PROCEED
             try:
-                if float(gmp) > 10:
+                if float(gmp) >= 30:   # ✅ Your rule
                     print(f"-- GMP PASSED for {name}, GMP={gmp}")
 
                     day_text = "Closing Today" if today == end else "Closing Tomorrow"
@@ -136,6 +130,7 @@ def process_ipos(ipos):
 
         else:
             print(f"-- IPO {name} not in closing window (Today={today}, End={end}), skipping")
+
 
 # ---------------- RUN DAILY ----------------
 
