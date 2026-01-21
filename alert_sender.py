@@ -219,18 +219,18 @@ def process_and_alert(supabase, ipo, today, is_closing_today):
         if send_telegram_message(message):
             logger.info(f"Telegram alert sent for {ipo_name}")
         
-        # Send to N8N webhook (for WhatsApp)
-        ipo_data = {
-            "name": ipo_name,
-            "price": ipo['price'],
-            "subscription": ipo['subscription'],
-            "start_date": ipo['start_date'],
-            "end_date": ipo['end_date'],
-            "avg_gmp": round(avg_gmp, 2),
-            "gmp_history": [{"date": r['recorded_at'], "gmp": r['gmp']} for r in gmp_result.data]
-        }
-        alert_type = "closing_today" if is_closing_today else "closing_tomorrow"
-        send_n8n_webhook(ipo_data, alert_type)
+        # Send to N8N webhook (for WhatsApp) - DISABLED FOR NOW
+        # ipo_data = {
+        #     "name": ipo_name,
+        #     "price": ipo['price'],
+        #     "subscription": ipo['subscription'],
+        #     "start_date": ipo['start_date'],
+        #     "end_date": ipo['end_date'],
+        #     "avg_gmp": round(avg_gmp, 2),
+        #     "gmp_history": [{"date": r['recorded_at'], "gmp": r['gmp']} for r in gmp_result.data]
+        # }
+        # alert_type = "closing_today" if is_closing_today else "closing_tomorrow"
+        # send_n8n_webhook(ipo_data, alert_type)
         
         # Update status
         supabase.table('ipos').update({'status': new_status}).eq('id', ipo_id).execute()
